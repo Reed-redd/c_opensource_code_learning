@@ -69,7 +69,7 @@ typedef struct MallocBlockInfo {
 typedef struct TestState {
 	const ListNode *check_point; // Check point of the test if there's a
 				     // setup function.
-	void *state;		     // State associated with the test.
+	void *state; // State associated with the test.
 } TestState;
 
 // Determines whether two values are the same.
@@ -1500,6 +1500,13 @@ int _run_test(const char *const function_name, const UnitTestFunction Function,
 	return rc;
 }
 
+/**
+ * @brief 测试程序主入口
+ *
+ * @param tests
+ * @param number_of_tests
+ * @return int
+ */
 int _run_tests(const UnitTest *const tests, const size_t number_of_tests)
 {
 	// Whether to execute the next test.
@@ -1530,6 +1537,7 @@ int _run_tests(const UnitTest *const tests, const size_t number_of_tests)
 		const ListNode *test_check_point = NULL;
 		TestState *current_TestState;
 		const UnitTest *const test = &tests[current_test++];
+		/** 判空处理 */
 		if (!test->function) {
 			continue;
 		}

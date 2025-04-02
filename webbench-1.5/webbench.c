@@ -50,6 +50,23 @@ char host[MAXHOSTNAMELEN];
 #define REQUEST_SIZE 2048
 char request[REQUEST_SIZE];
 
+/**
+ * options的5个字段为name, has_arg, flag, val,
+ * 1. name表示长选项的名称
+ * 2. has_arg表示是否带参数 值为枚举量no_argument, required_argument, optional_argument
+ * 		no_argument: 该选项不带参数
+ * 		required_argument: 该选项必须带参数
+ * 		optional_argument: 该选项可带参数也可不带参数
+ * 3.
+ * flag表示一个标志，如果不为NULL，那么flag指向的变量的值将被设置为val。如果为NULL,则返回val
+ * 4. val表示设定值
+ *
+ * 例如：{"reload", no_argument, &force_reload, 1}
+ * 当命令行参数中有--reload时，force_reload的值将被设置为1
+ *
+ * {"http09", no_argument, NULL, '9'}
+ * 当命令行参数中有--http09时，getopt_long返回'9'
+ */
 static const struct option long_options[] = {
 	{"force", no_argument, &force, 1},
 	{"reload", no_argument, &force_reload, 1},
@@ -106,6 +123,15 @@ int main(int argc, char *argv[])
 		return 2;
 	}
 
+	/** 标准的命令行参数解析入口 */
+	/** 解析命令行参数，是getopt的加强版本。支持长选项（如--help）以及短选项（-h）
+	 * 1. 第一个参数是argc，表示参数个数
+	 * 2. 第二个参数是argv，表示参数数组
+	 * 3. 第三个参数是短选项字符串，表示所有支持的短选项
+	 * 后面带冒号表示该选项后面必须带参数
+	 * 后面带两个冒号表示该选项后面可带参数也可不带参数
+	 * 4. 第四个参数是长选项数组，表示所有支持的长选项
+	 */
 	while ((opt = getopt_long(argc, argv, "912Vfrt:p:c:?h", long_options,
 				  &options_index)) != EOF) {
 		switch (opt) {
@@ -388,11 +414,15 @@ static int bench(void)
 		fclose(f);
 		return 0;
 	} else {
+		/** 当写入管道的内容小于4KB，可保证写入流程是原子性的，因此这里可以直接写入 */
 		f = fdopen(mypipe[0], "r");
 		if (f == NULL) {
 			perror("open pipe for reading failed.");
 			return 3;
 		}
+		/** 设置为无缓存，当子进程发送的数据较小时默认的满缓存机制会导致父进程读取困难。
+		 * 如果使用满缓存的同时也希望能够让父进程实时读取，则需要父进程主动嗲用fflush() 
+		 */
 		setvbuf(f, NULL, _IONBF, 0);
 		speed  = 0;
 		failed = 0;
@@ -439,6 +469,7 @@ void benchcore(const char *host, const int port, const char *req)
 nexttry:
 	while (1) {
 		if (timerexpired) {
+			/** 不是很喜欢这种写法，failed变量跨的范围太大了 */
 			if (failed > 0) {
 				/* fprintf(stderr,"Correcting failed by signal\n"); */
 				failed--;

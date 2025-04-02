@@ -26,17 +26,29 @@ extern void _test_free(void* const ptr, const char* file, const int line);
 #define free(ptr) _test_free(ptr, __FILE__, __LINE__)
 #endif // UNIT_TESTING
 
+/**
+ * @brief 没有free
+ * 
+ */
 void leak_memory() {
     int * const temporary = (int*)malloc(sizeof(int));
     *temporary = 0;
 }
 
+/**
+ * @brief 访问越界
+ * 
+ */
 void buffer_overflow() {
     char * const memory = (char*)malloc(sizeof(int));
     memory[sizeof(int)] = '!';
     free(memory);
 }
 
+/**
+ * @brief 访问越界
+ * 
+ */
 void buffer_underflow() {
     char * const memory = (char*)malloc(sizeof(int));
     memory[-1] = '!';
